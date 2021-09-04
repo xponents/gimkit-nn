@@ -1,0 +1,148 @@
+"""
+gimkit_neuralnetwork
+
+Description: This is the first attempt to make a "neural network" for gimkit.
+It wasn't an actual neural network and used randomly generated lists (useEvent)
+to find when to use the quadgrader, bonuses, and rebooter. This was a fail and
+I wasn't able to find a better strategy with this.
+"""
+import pygame, tsapp, math, random
+def sigmoid(x):
+  return 1 / (1 + math.exp(-x))
+pygame.init()
+#variable for games
+question = 0
+totalQ = 0
+money = 0
+mEarned = 0
+mpqLevel = 1
+streakLevel = 1
+multLevel = 1
+reboot = False
+#variable for bot
+sign = 1
+areaUpgrade = 1
+area = 1
+
+previousTotalQ = 151 #bonus#bonus2  #quad    #quad2    #reboot
+useEvent = [[4, 3, 3,1],[8,6,7,3],[4,4,4,4],[5,5,5,1],[5,5,5,2]] #[mpq,streak,mult,question]
+previousTotalQ = 999
+useEvent = [[1, 1, 1,1],[2,2,2,1],[3,3,3,1],[1,1,1,1],[4,4,4,2]]
+mpqValue = [1,5,50,100,500,2000,5000,10000,250000,1000000]
+streakValue = [1,3,10,50,250,1200,6500,35000,175000,1000000]
+multValue = [1,1.5,2,3,5,8,12,18,30,100]
+mpqCost = [0,10,100,1000,10000,75000,300000,1000000,10000000,100000000,999999999999]
+streakCost = [0,20,200,2000,20000,200000,2000000,20000000,200000000,2000000000,99999999999]
+multCost = [0,50,300,2000,12000,85000,700000,6500000,65000000,1000000000,999999999999]
+while True:
+    #Checks if all 10 levels are unlocked
+    level_ten = mpqLevel == 10 and streakLevel == 10 and multLevel == 10
+    if not level_ten:
+        question+=1
+        totalQ+=1
+    #Buying Upgrade
+    if money >= streakCost[streakLevel]:
+        money-=streakCost[streakLevel]
+        streakLevel+=1
+        question=1
+        print("Streak is now level " + str(streakLevel))
+    elif money >= multCost[multLevel]:
+        money-=multCost[multLevel]
+        multLevel+=1
+        question=1
+        print("Multiplier is now level " + str(multLevel))
+    elif money >= mpqCost[mpqLevel]:
+        money-=mpqCost[mpqLevel]
+        mpqLevel+=1
+        question=1
+        print("MPQ is now level " + str(mpqLevel))
+    #Calculates money for questions
+    if question > 1:
+        mEarned = (((question-1)*streakValue[streakLevel-1])+mpqValue[mpqLevel-1])*multValue[multLevel-1]
+    if question == 1:
+        mEarned = (mpqValue[mpqLevel-1])*multValue[multLevel-1]
+    #adds money to question
+    mEarned = int(mEarned)
+    money+=mEarned
+    #Using Power Ups
+    if mpqLevel == useEvent[0][0] and streakLevel == useEvent[0][1] and multLevel == useEvent[0][2] and question == useEvent [0][3] and money >= 85:
+        money-=85
+        mEarned = mEarned*10
+        money+=mEarned
+        print("x10 Mutiplier Bonus")
+    if mpqLevel == useEvent[2][0] and streakLevel == useEvent[2][1] and multLevel == useEvent[2][2] and question == useEvent[2][3] and money >= 2000:
+        money-=2000
+        mpqLevel += 1
+        streakLevel += 1
+        multLevel += 1
+        question = 1
+        print("QuadGrader has been used")
+    #reboot
+    if mpqLevel == useEvent[4][0] and streakLevel == useEvent[4][1] and multLevel == useEvent[4][2] and question == useEvent[4][3] and money >= 1200:
+        money-=1200
+        reboot = True
+        question = 1
+        print("Reboot has been used")
+    #quad2
+    if mpqLevel == useEvent[3][0] and streakLevel == useEvent[3][1] and multLevel == useEvent[3][2] and question == useEvent[3][3] and money >= 2000 and reboot == True:
+        money-=2000
+        mpqLevel += 1
+        streakLevel += 1
+        multLevel += 1
+        question = 1
+        print("QuadGrader has been used")
+    #bonus2
+    if mpqLevel == useEvent[1][0] and streakLevel == useEvent[1][1] and multLevel == useEvent[1][2] and question == useEvent[1][3] and money >= 1000 and reboot == True:
+        money-=1000
+        mEarned = mEarned*10
+        money+=mEarned
+        print("x10 Mutiplier Bonus")
+    #Print out results or if all ten levels are unlocked
+    if level_ten:
+        print("All ten levels done. totalQ: " + str(totalQ))
+        if False: #correct this later
+            do_next = input("Enter (1 = check level_ten, 2 = train, 3 = show lists, 4 = just correct, 5 = break)")
+        do_next = "2" #correct this
+        if do_next == "3":
+            print(useEvent)
+        if do_next == "2" or do_next == "4":
+            if previousTotalQ < totalQ: #corrects if worse
+                if sign == 1:
+                    useEvent[areaUpgrade][area] -= 1
+                if sign == 2:
+                    useEvent[areaUpgrade][area] += 1
+        if do_next == "2":
+            if previousTotalQ > totalQ: #stores if the new previoustotalQ beats the best totalQ
+                previousTotalQ = totalQ
+                while True:
+                    print(totalQ)
+                    print(useEvent)
+                    pygame.time.wait(1000)
+            #randomly trains the bot
+            areaUpgrade = random.randint(0,3) #The whole useEvent list [[0000],[0000],[0000],[0000]]
+            area = random.randint(0,3) #(0 = mpq, 1 = streak, 2 = mult, 3 = question)
+            sign = random.randint(1,2) #(1 = positive, 2 = negative)
+            if sign == 1:
+                useEvent[areaUpgrade][area] += 1
+            if sign == 2:
+                useEvent[areaUpgrade][area] -= 1
+            question = 0 #resets the variables
+            totalQ = 0
+            money = 0
+            mEarned = 0
+            mpqLevel = 1
+            streakLevel = 1
+            multLevel = 1
+            reboot = False
+    else:
+        print("MPQ: " + str(mpqLevel))
+        print("Streak: " + str(streakLevel))
+        print("Mult: " + str(multLevel))
+        print("QUESTION: " + str(question))
+        print("------------")
+        print("money: " + str(money))
+        print("mEarned: " + str(mEarned))
+        print("totalQ: " + str(totalQ))
+        print(str(previousTotalQ))
+        print()
+    pygame.time.wait(0)
